@@ -1,5 +1,3 @@
-# IO Controller
-
 Multiple Arduino ProMicros (APM) will be used to either control inputs or outputs (LEDs, servos, displays).
 
 
@@ -38,7 +36,7 @@ all digital inputs
 
 ## AUDIO 1
 1 APM
-* **!!! pins 2/3 for i2c bus !!!**
+**!!! pins 2/3 for i2c bus !!!**
 ### direct inputs pins:
 * A3,A2,A1,A0,A10,A9 AUDIO 1 potis
 * A6,A7,A8 AUDIO 2 potis
@@ -60,4 +58,17 @@ all digital inputs
 ~~* 9 BIT~~
 ~~* 14/15 - 1 MM5451 (dim poti direct on MM5451)~~
 
-## 
+## EXT LIGHTING
+1 APM
+**!!! pins 2/3 for i2c bus !!!** (23017 + servocard)
+### direct pins
+- A0,A1 FORM, AERIAL REFUELING
+- A2,A3 ANTI-COLL, MASTER
+- A6,A7,A8 MANTRIM
+- A10 IFF MASTER
+- 14/15/16 IFF 7219
+
+### 23017
+- EXTLIGHTS, FUEL, MANTRIM (5+7+1)
+- TEST (8+4) + 2 external LEDs
+- FLTCTRL (6+2)
