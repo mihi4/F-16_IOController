@@ -1,12 +1,10 @@
 Multiple Arduino ProMicros (APM) will be used to either control inputs or outputs (LEDs, servos, displays).
 
-
 # Right Console
 
 ## KY58 
 1 APM
 * **!!! pins 2/3 for i2c bus !!!**
-
 
 ### direct input pins:
 * A3 VOLUME
@@ -37,6 +35,7 @@ all digital inputs
 ## AUDIO 1
 1 APM
 **!!! pins 2/3 for i2c bus !!!**
+
 ### direct inputs pins:
 * A3,A2,A1,A0,A10,A9 AUDIO 1 potis
 * A6,A7,A8 AUDIO 2 potis
@@ -61,6 +60,7 @@ all digital inputs
 ## EXT LIGHTING
 1 APM
 **!!! pins 2/3 for i2c bus !!!** (23017 + servocard)
+
 ### direct pins
 - A0,A1 FORM, AERIAL REFUELING
 - A2,A3 ANTI-COLL, MASTER
