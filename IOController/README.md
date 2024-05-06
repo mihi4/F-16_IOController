@@ -26,6 +26,15 @@ Multiple Arduino ProMicros (APM) will be used to either control inputs or output
 
 ## UHF
 1 APM
+1 internal 23017
+
+### direct input pins
+* A0/A1/A2/A3 - frequenzy selectors (voltage divider)
+* A10 - channel selector (voltage divider)
+* A9 - VOLUME
+
+### 23017
+all digital inputs
 
 ## AUDIO 1
 1 APM
@@ -33,12 +42,12 @@ Multiple Arduino ProMicros (APM) will be used to either control inputs or output
 ### direct inputs pins:
 * A3,A2,A1,A0,A10,A9 AUDIO 1 potis
 * A6,A7,A8 AUDIO 2 potis
-* (14/15 control MM5451 on ECM)
+* 14/15 control MM5451 on ECM
 
 ### 23017 IOEs
-* AUDIO 1/2 (10 DIn) (ECM 6 DIn)
+* AUDIO 1/2 (10 DIn),  ECM 6 DIn
 * AVTR (7 DIn, 2 DOut)
-* ENG START, MPO, EPU (9 DI, 3 DO)
+* ENG START, MPO, EPU (9 DI, 5 DO)
 * ELEC (3 DI, 9 DO)
 
 ~~## (ECM)~~
@@ -51,3 +60,4 @@ Multiple Arduino ProMicros (APM) will be used to either control inputs or output
 ~~* 9 BIT~~
 ~~* 14/15 - 1 MM5451 (dim poti direct on MM5451)~~
 
+## 
