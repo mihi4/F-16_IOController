@@ -33,13 +33,21 @@ Multiple Arduino ProMicros (APM) will be used to either control inputs or output
 ### direct inputs pins:
 * A3,A2,A1,A0,A10,A9 AUDIO 1 potis
 * A6,A7,A8 AUDIO 2 potis
+* (14/15 control MM5451 on ECM)
 
 ### 23017 IOEs
-* AUDIO 1/2 (10 DIn)
+* AUDIO 1/2 (10 DIn) (ECM 6 DIn)
 * AVTR (7 DIn, 2 DOut)
 * ENG START, MPO, EPU (9 DI, 3 DO)
 * ELEC (3 DI, 9 DO)
 
-## ECM
-1 APM, 
+~~## (ECM)~~
+~~* 1 APM (alternatively use 6 inputs on AUDIO 1/2 23017) and other pins on the AUDIO 1 APM to drive the MM5451~~
+
+~~### direct input pins:~~
+~~* 4/5 PWR~~
+~~* 6/7 XMIT~~
+~~* 8 RESET~~
+~~* 9 BIT~~
+~~* 14/15 - 1 MM5451 (dim poti direct on MM5451)~~
 
