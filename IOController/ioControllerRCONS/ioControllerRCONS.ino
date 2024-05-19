@@ -49,7 +49,7 @@ boolean joyButtons[JOYBUTTONS] = { 0 };
 struct InputMapping
 {
   byte btnNum;
-  boolean isSingle;  // is the input only one input (rotary switch) or multiple (2/3way switch)
+  boolean isSingle;  // does the input create only one button (rotary switch) or multiple (2/3way switch)
   boolean nextPositive; // if multiple, is the "off" button number +1 or -1 than btnNum
 };
 
@@ -163,14 +163,7 @@ struct mcpInputs {
   InputMapping inputMappings[MCPNUM];
 };
 
-mcpInputs MCPInputs = {aircondButtons, avpwrButtons, hudButtons, kyButtons};
-
-// initialize mcpInputs array with data from inputMappings
-/*MCPInputs.inputMappings[MCPAIRCOND] = aircondButtons; // [j] = aircondButtons[j];
-MCPInputs.inputMappings[MCPAVPWR] = avpwrButtons;
-MCPInputs.inputMappings[MCPHUD] = hudButtons;
-MCPInputs.inputMappings[MCPKY] = kyButtons;*/
-
+mcpInputs MCPInputs[MCPNUM] = {aircondButtons, avpwrButtons, hudButtons, kyButtons};
 
 void updateJoystick() {
 
@@ -186,9 +179,23 @@ void updateJoystick() {
   Joystick.sendState();
 }
 
-void setButtonValue(int i, int x) {
+void setButtonValue(int mcp, int input) {
   
-
+  boolean inputValue = !(mcps[mcp].digitalRead(input)); // negate because of pinned to gnd
+  
+  InputMapping mapping = MCPInputs[mcp].inputMappings[mcp]; //[input];
+  byte baseBtnNum = mapping.btnNum;
+  
+  if (!mapping.isSingle) { // 2 or 3way switch connected to input
+    boolean valueToSet = !inputValue; // second button is always negation of input
+    byte newBtnNum = baseBtnNum+1;
+    if (valueToSet) { // input changed to OFF?
+      
+    }
+    joyButtons[newBtnNum] = valueToSet;
+  }
+  joyButtons[baseBtnNum] = inputValue;
+  
 }
 
 void checkMCPs() {
@@ -201,7 +208,7 @@ void checkMCPs() {
         if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
           // x = position of changed bit in, check if it's MSB or LSB
           // call routine to check the input and set the specifix button 
-          // send parameters x and i
+          // send parameters x (mcp) and i (mcp input)
         }
       }
       registerMcpPrevious[i] = registerMcpCurrent[i];
