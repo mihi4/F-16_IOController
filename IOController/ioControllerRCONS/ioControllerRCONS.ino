@@ -46,7 +46,7 @@ uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
 // bit array with all button states
 boolean joyButtons[JOYBUTTONS] = { 0 };
 
-struct Input
+struct InputMapping
 {
   byte btnNum;
   boolean isSingle;  // is the input only one input (rotary switch) or multiple (2/3way switch)
@@ -54,7 +54,7 @@ struct Input
 };
 
 // Define all inputs per mcp and their according joystick button values (on/off)
-Input aircondButtons[MCPINPUTS] = {
+struct InputMapping aircondButtons[MCPINPUTS] = {
   // AIRCOND Rotary
   {AIRCONDSTART,   1, 0}, // OFF (0)
   {AIRCONDSTART+1, 1, 0 }, // NORM (1)
@@ -84,7 +84,7 @@ Input aircondButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}
 };
 
-Input hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
+struct InputMapping hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
   {HUDSTART,   0, 1}, // Pin 0, VV/VAH -> VAH (1)
   {HUDSTART+2, 0, 0}, // Pin 1, OFF -> VAH (1)
   
@@ -111,7 +111,7 @@ Input hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
   {HUDSTART+23, 0, 0} // Pin 11, OFF -> ON (22)
 };
 
-Input avpwrButtons[MCPINPUTS] = {
+struct InputMapping avpwrButtons[MCPINPUTS] = {
   // INS Rotary
   {AVPWRSTART,   1, 0}, // OFF
   {AVPWRSTART+1, 1, 0 }, // STOR HDG
@@ -133,7 +133,7 @@ Input avpwrButtons[MCPINPUTS] = {
   {AVPWRSTART+22, 0, 1} // GPS -> OFF (23)  
 };
 
-Input kyButtons[MCPINPUTS] = {
+struct InputMapping kyButtons[MCPINPUTS] = {
   // MODE rotary
   {KYSTART,   1, 0}, // P
   {KYSTART+1, 1, 0}, // C
@@ -159,6 +159,18 @@ Input kyButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}  // Pin 16 not used
 };
 
+struct mcpInputs {
+  InputMapping inputMappings[MCPNUM];
+};
+
+mcpInputs MCPInputs = {aircondButtons, avpwrButtons, hudButtons, kyButtons};
+
+// initialize mcpInputs array with data from inputMappings
+/*MCPInputs.inputMappings[MCPAIRCOND] = aircondButtons; // [j] = aircondButtons[j];
+MCPInputs.inputMappings[MCPAVPWR] = avpwrButtons;
+MCPInputs.inputMappings[MCPHUD] = hudButtons;
+MCPInputs.inputMappings[MCPKY] = kyButtons;*/
+
 
 void updateJoystick() {
 
@@ -174,12 +186,13 @@ void updateJoystick() {
   Joystick.sendState();
 }
 
-void checkMCPs() {
+void setButtonValue(int i, int x) {
+  
 
-/* uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
-uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
-*/
-  // get io registers from all 23017
+}
+
+void checkMCPs() {
+  // iterate through io registers from all 23017
   for (int i=0; i<MCPNUM; i++) {
     registerMcpCurrent[i] = mcps[i].readGPIOAB();
     if (registerMcpCurrent[i] != registerMcpPrevious[i]) {
@@ -188,6 +201,7 @@ uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
         if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
           // x = position of changed bit in, check if it's MSB or LSB
           // call routine to check the input and set the specifix button 
+          // send parameters x and i
         }
       }
       registerMcpPrevious[i] = registerMcpCurrent[i];
