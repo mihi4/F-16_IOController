@@ -13,21 +13,10 @@
 #define MCPHUD 1
 #define MCPAIRCOND 0
 
-// 23017 configuration
-Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
-Adafruit_MCP23017 mcp1;
-Adafruit_MCP23017 mcp2;
-Adafruit_MCP23017 mcp3;
-Adafruit_MCP23017 mcps[MCPNUM] = { mcp0, mcp1, mcp2, mcp3 };
-byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
-
-// status of mcp registers
-uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
-uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
 
 // create joystick with 128 buttons and X axis
 
-#define JOYBUTTONS 128  // number of total joystick buttons
+#define JOYBUTTONS 90  // number of total joystick buttons
 #define JOYHATSWITCHES 0
 #define JOYHIDID 0x04
 
@@ -42,6 +31,21 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 
 #define VOLPIN A3
 
+// 23017 configuration
+Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
+Adafruit_MCP23017 mcp1;
+Adafruit_MCP23017 mcp2;
+Adafruit_MCP23017 mcp3;
+Adafruit_MCP23017 mcps[MCPNUM] = { mcp0, mcp1, mcp2, mcp3 };
+byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
+
+// status of mcp registers
+uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
+uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
+
+// bit array with all button states
+boolean joyButtons[JOYBUTTONS] = { 0 };
+
 struct Input
 {
   byte btnNum;
@@ -49,6 +53,7 @@ struct Input
   boolean nextPositive; // if multiple, is the "off" button number +1 or -1 than btnNum
 };
 
+// Define all inputs and their according joystick button values (on/off)
 Input aircondButtons[MCPINPUTS] = {
   // AIRCOND Rotary
   {AIRCONDSTART, 1, 0}, // OFF (0)
@@ -62,7 +67,7 @@ Input aircondButtons[MCPINPUTS] = {
   {AIRCONDSTART+6, 0, 1}, // REL ONLY (6) -> OFF (7)
   {AIRCONDSTART+8, 0, 0}, // ARM/REL (8) -> OFF (7)
   
-  {NOTUSED, 0, 0}, // pin not used
+  {NOTUSED, 0, 0}, // pin 7 not used
   
   // SNSPWR
   {AIRCONDSTART+9, 0, 1}, // LEFT HDPT (9)-> OFF (10)
@@ -116,17 +121,16 @@ Input avpwrButtons[MCPINPUTS] = {
   {AVPWRSTART+5, 1, 0}, // IN FLT ALIGN  
   {AVPWRSTART+6, 1, 0}, // ATT
   // MIDS LVT
-  {AVPWRSTART+7, 0, 1}, // ZERO -> OFF (5)
-  {AVPWRSTART+9, 0, 0}, // ON-> OFF (7)
+  {AVPWRSTART+7, 0, 1}, // ZERO -> OFF (8)
+  {AVPWRSTART+9, 0, 0}, // ON-> OFF (8)
   
   {AVPWRSTART+10, 0, 1}, // MMC -> OFF (11)
-  {AVPWRSTART+12, 0, 1}, // ST STA -> OFF (11)  
-  {AVPWRSTART+14, 0, 1}, // MFD -> OFF (11)
-  {AVPWRSTART+16, 0, 1}, // UFC -> OFF (11)
-  {AVPWRSTART+18, 0, 1}, // MAP -> OFF (11)
-  {AVPWRSTART+20, 0, 1}, // DL -> OFF (11)
+  {AVPWRSTART+12, 0, 1}, // ST STA -> OFF (13)  
+  {AVPWRSTART+14, 0, 1}, // MFD -> OFF (15)
+  {AVPWRSTART+16, 0, 1}, // UFC -> OFF (17)
+  {AVPWRSTART+18, 0, 1}, // MAP -> OFF (19)
+  {AVPWRSTART+20, 0, 1}, // DL -> OFF (21)
   {AVPWRSTART+22, 0, 1} // GPS -> OFF (23)  
-  
 };
 
 Input kyButtons[MCPINPUTS] = {
@@ -136,35 +140,56 @@ Input kyButtons[MCPINPUTS] = {
   {KYSTART+2, 1, 0}, // LD
   {KYSTART+3, 1, 0}, // RV
   
-  //FILL Rotary
-  {KYSTART+4, 1, 0}, // Z 1-5
-  {KYSTART+5, 1, 0}, // 1
-  {KYSTART+6, 1, 0}, // 2
-  {KYSTART+7, 1, 0}, // 3
-  {KYSTART+8, 1, 0}, // 4
-  {KYSTART+9, 1, 0}, // 5
-  {KYSTART+10, 1, 0}, // 6
-  {KYSTART+11, 1, 0}, // Z ALL
-  
   // TD Rotary
-  {KYSTART+12, 0, 1}, // TD -> On
-  {KYSTART+14, 0, 1}, // OFF -> On
+  {KYSTART+4, 0, 1}, // TD -> On
+  {KYSTART+6, 0, 0}, // OFF -> On
   
-  {NOTUSED, 0, 0}, 
-  {NOTUSED, 0, 0}, 
- 
+  {NOTUSED, 0, 0}, // Pin 7 not used
+  
+  //FILL Rotary
+  {KYSTART+7, 1, 0}, // Z 1-5
+  {KYSTART+8, 1, 0}, // 1
+  {KYSTART+9, 1, 0}, // 2
+  {KYSTART+10, 1, 0}, // 3
+  {KYSTART+11, 1, 0}, // 4
+  {KYSTART+12, 1, 0}, // 5
+  {KYSTART+13, 1, 0}, // 6
+  {KYSTART+14, 1, 0}, // Z ALL
+  
+  {NOTUSED, 0, 0}  // Pin 16 not used
 };
 
 
 void updateJoystick() {
 
+  // set Joystickbuttons according to array
+  for (int i=0; i<JOYBUTTONS; i++) {
+    Joystick.setButton(i, joyButtons[i]);
+  }
+
   Joystick.setXAxis(0);
   Joystick.setYAxis(0);
   Joystick.setZAxis(analogRead(VOLPIN));
+  
   Joystick.sendState();
 }
 
 void checkMCPs() {
+
+/* uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
+uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
+*/
+  // get io registers from all 23017
+  for (int i=0; i<MCPNUM; i++) {
+    registerMcpCurrent[i] = mcps[i].readGPIOAB();
+    if (registerMcpCurrent[i] != registerMcpPrevious[i]) {
+    
+      // check, which bits have changed and set button values
+      registerMcpPrevious[i] = registerMcpCurrent[i];
+    }
+  }
+  
+  
 
   
 }
