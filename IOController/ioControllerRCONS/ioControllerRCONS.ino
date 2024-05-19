@@ -14,7 +14,7 @@
 #define MCPAIRCOND 0
 
 
-// create joystick with 128 buttons and X axis
+// create joystick with 90 buttons and 3 axis
 
 #define JOYBUTTONS 90  // number of total joystick buttons
 #define JOYHATSWITCHES 0
@@ -53,10 +53,10 @@ struct Input
   boolean nextPositive; // if multiple, is the "off" button number +1 or -1 than btnNum
 };
 
-// Define all inputs and their according joystick button values (on/off)
+// Define all inputs per mcp and their according joystick button values (on/off)
 Input aircondButtons[MCPINPUTS] = {
   // AIRCOND Rotary
-  {AIRCONDSTART, 1, 0}, // OFF (0)
+  {AIRCONDSTART,   1, 0}, // OFF (0)
   {AIRCONDSTART+1, 1, 0 }, // NORM (1)
   {AIRCONDSTART+2, 1, 0}, // DUMP (2)
   {AIRCONDSTART+3, 1, 0}, // RAM  (3)
@@ -70,7 +70,7 @@ Input aircondButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}, // pin 7 not used
   
   // SNSPWR
-  {AIRCONDSTART+9, 0, 1}, // LEFT HDPT (9)-> OFF (10)
+  {AIRCONDSTART+9,  0, 1}, // LEFT HDPT (9)-> OFF (10)
 
   {AIRCONDSTART+11, 0 ,1}, // RIGHT HDPT (11)-> OFF (12)
 
@@ -85,7 +85,7 @@ Input aircondButtons[MCPINPUTS] = {
 };
 
 Input hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
-  {HUDSTART, 0, 1}, // Pin 0, VV/VAH -> VAH (1)
+  {HUDSTART,   0, 1}, // Pin 0, VV/VAH -> VAH (1)
   {HUDSTART+2, 0, 0}, // Pin 1, OFF -> VAH (1)
   
   {HUDSTART+3, 0, 1}, // Pin 2, ATT/FPM -> FPM (4)
@@ -95,7 +95,7 @@ Input hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
   {HUDSTART+8, 0, 0}, // Pin 5, OFF -> PFD (7)
   
   // DEPR RET
-  {HUDSTART+9, 0, 1}, // Pin 6, STBY -> PRI (10)
+  {HUDSTART+9,  0, 1}, // Pin 6, STBY -> PRI (10)
   {HUDSTART+11, 0, 0}, // Pin 7, OFF -> PRI (10)
   
   {HUDSTART+12, 0, 1}, // Pin 8, CAS -> TAS (13)
@@ -113,7 +113,7 @@ Input hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
 
 Input avpwrButtons[MCPINPUTS] = {
   // INS Rotary
-  {AVPWRSTART, 1, 0}, // OFF
+  {AVPWRSTART,   1, 0}, // OFF
   {AVPWRSTART+1, 1, 0 }, // STOR HDG
   {AVPWRSTART+2, 1, 0}, // NORM
   {AVPWRSTART+3, 1, 0}, // NAV 
@@ -135,7 +135,7 @@ Input avpwrButtons[MCPINPUTS] = {
 
 Input kyButtons[MCPINPUTS] = {
   // MODE rotary
-  {KYSTART, 1, 0}, // P
+  {KYSTART,   1, 0}, // P
   {KYSTART+1, 1, 0}, // C
   {KYSTART+2, 1, 0}, // LD
   {KYSTART+3, 1, 0}, // RV
@@ -147,9 +147,9 @@ Input kyButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}, // Pin 7 not used
   
   //FILL Rotary
-  {KYSTART+7, 1, 0}, // Z 1-5
-  {KYSTART+8, 1, 0}, // 1
-  {KYSTART+9, 1, 0}, // 2
+  {KYSTART+7,  1, 0}, // Z 1-5
+  {KYSTART+8,  1, 0}, // 1
+  {KYSTART+9,  1, 0}, // 2
   {KYSTART+10, 1, 0}, // 3
   {KYSTART+11, 1, 0}, // 4
   {KYSTART+12, 1, 0}, // 5
@@ -183,15 +183,16 @@ uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
   for (int i=0; i<MCPNUM; i++) {
     registerMcpCurrent[i] = mcps[i].readGPIOAB();
     if (registerMcpCurrent[i] != registerMcpPrevious[i]) {
-    
       // check, which bits have changed and set button values
+      for (int x = 0; x < MCPINPUTS; x++) {
+        if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
+          // x = position of changed bit in, check if it's MSB or LSB
+          // call routine to check the input and set the specifix button 
+        }
+      }
       registerMcpPrevious[i] = registerMcpCurrent[i];
     }
-  }
-  
-  
-
-  
+  }  
 }
 
 void setup() {
@@ -212,11 +213,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
- checkMCPs();
-
+  checkMCPs();
+  delay(10);
  // 
-
-
 
 
 }
