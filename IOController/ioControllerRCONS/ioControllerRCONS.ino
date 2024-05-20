@@ -1,6 +1,6 @@
+#include <Arduino.h>
 #include <Joystick.h>
 #include <Adafruit_MCP23017.h>
-
 
 // define mcps 
 
@@ -22,16 +22,26 @@
 
 Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOYHATSWITCHES, true, true, true, false, false, false, false, false, false, false, false);
 
-// button numbers to start from  FIXXXME should not be needed with Input definition 
+// button numbers to start from
 #define AIRCONDSTART 0
 #define HUDSTART 19
 #define AVPWRSTART 43
 #define KYSTART 67
 #define ANTIICESTART 82
 
-#define VOLPIN A3
+#define VOLUMEPIN A3
 
-// 23017 configuration
+// ANTIICE pins (directly connected to ProMicro)
+#define ANTIICEPINS 6
+
+#define ENGINEOFFPIN 4
+#define ENGINEONPIN 5
+#define IFFUPPERPIN 6
+#define IFFLOWERPIN 7
+#define UHFUPPERPIN 8
+#define UHFLOWERPIN 9
+
+// ------------------  23017 configuration
 Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
 Adafruit_MCP23017 mcp1;
 Adafruit_MCP23017 mcp2;
@@ -42,6 +52,10 @@ byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
 // status of mcp registers
 uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
 uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
+
+
+
+//jjjjjjjjjjjjjjjjjjjj  joystick/inputs configuration  jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
 
 // bit array with all button states
 boolean joyButtons[JOYBUTTONS] = { 0 };
@@ -163,7 +177,17 @@ struct mcpInputs {
   InputMapping inputMappings[MCPNUM];
 };
 
-mcpInputs MCPInputs[MCPNUM] = {aircondButtons, avpwrButtons, hudButtons, kyButtons};
+//mcpInputs MCPInputs[MCPNUM]; //= {aircondButtons, avpwrButtons, hudButtons, kyButtons};
+//MCPInputs[0].inputMappings = aircondButtons;*/
+mcpInputs ac = {aircondButtons};
+mcpInputs av = {avpwrButtons};
+mcpInputs hud = {hudButtons};
+mcpInputs ky = {kyButtons};
+
+mcpInputs MCPInputs[MCPNUM] = {ac, av, hud, ky};
+
+
+// ffffffffffffffffffffffffffffffff functions
 
 void updateJoystick() {
 
@@ -174,29 +198,28 @@ void updateJoystick() {
 
   Joystick.setXAxis(0);
   Joystick.setYAxis(0);
-  Joystick.setZAxis(analogRead(VOLPIN));
+  Joystick.setZAxis(analogRead(VOLUMEPIN));
   
   Joystick.sendState();
 }
 
 void setButtonValue(int mcp, int input) {
   
-  boolean inputValue = !(mcps[mcp].digitalRead(input)); // negate because of pinned to gnd
+  boolean inputValue = !(mcps[mcp].digitalRead(input)); // get state of changed input, negate because of pinned to gnd
   
-  InputMapping mapping = MCPInputs[mcp].inputMappings[mcp]; //[input];
+  InputMapping mapping = MCPInputs[mcp].inputMappings[input];
   byte baseBtnNum = mapping.btnNum;
   
   if (!mapping.isSingle) { // 2 or 3way switch connected to input
     boolean valueToSet = !inputValue; // second button is always negation of input
-    byte newBtnNum = baseBtnNum+1;
-    if (valueToSet) { // input changed to OFF?
-      
-    }
+    byte newBtnNum = baseBtnNum-1;
+    if (mapping.nextPositive) newBtnNum = baseBtnNum+1;
+    
     joyButtons[newBtnNum] = valueToSet;
   }
   joyButtons[baseBtnNum] = inputValue;
-  
 }
+
 
 void checkMCPs() {
   // iterate through io registers from all 23017
@@ -207,14 +230,35 @@ void checkMCPs() {
       for (int x = 0; x < MCPINPUTS; x++) {
         if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
           // x = position of changed bit in, check if it's MSB or LSB
-          // call routine to check the input and set the specifix button 
+          // call routine to check the input and set the specific button 
           // send parameters x (mcp) and i (mcp input)
+          setButtonValue(x, i);
         }
       }
       registerMcpPrevious[i] = registerMcpCurrent[i];
     }
   }  
 }
+
+
+void checkAntiIce() {
+  byte pins[ANTIICEPINS][2] = { {ENGINEOFFPIN,0}, {ENGINEONPIN,2}, {IFFUPPERPIN,3}, {IFFLOWERPIN,5}, {UHFUPPERPIN,6}, {UHFLOWERPIN,8} };
+  for (int i=0; i<ANTIICEPINS; i++) {
+    byte baseBtnNum = ANTIICESTART + pins[i][1];
+    byte newBtnNum = baseBtnNum + 1;
+    if (i % 2) newBtnNum = baseBtnNum - 1; // odd index = -1
+    
+    boolean baseBtnValue = !(digitalRead(pins[i][0]));
+    boolean newBtnValue = !baseBtnValue;
+    
+    joyButtons[baseBtnNum] = baseBtnValue;
+    joyButtons[newBtnNum] = newBtnValue;    
+  }
+}
+
+
+
+// sssssssssssssssssssssssss SETUP sssssssssssssssssssssssssss
 
 void setup() {
   // put your setup code here, to run once:
@@ -233,10 +277,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  checkAntiIce();
   checkMCPs();
-  delay(10);
+  updateJoystick();
+  delay(30); // only input reading does not need high performance, let chip rest
  // 
-
-
 }
