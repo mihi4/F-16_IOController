@@ -69,11 +69,27 @@
   
   Datenfeld datenfeld[]=
     {
+    
       //Description ID    DT    OT    target Ref2 Ref3 Ref4 Ref5  RQ   IV
+     
+     {  "NOPWR",  "1601", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}   //1601;ELECTRICS;bool;power_Off ;Set if there is no electrical power.  NB: not a lamp bit
+     ,{ "IN3D",   "1800", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}    // 1800;AIRCRAFT;bool;in3D;True if player is in3D
+
+      // LED outputs
+     ,{ "FLBIT",   "1594", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}    //1594;TEST/FLCS;bool;flcsBitRun ;FLT CONTROL panel RUN light (used to be Multi-engine fire light)
+     ,{ "FFAIL",   "1595", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}//1595;TEST/FLCS;bool;flcsBitFail ;"FLT CONTROL panel FAIL light (used to be Lock light Cue; non-F-16)" 
+     ,{ "FLCCA",   "0922", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}//922;TEST/FLCS;bool;Flcs_Flcc_A;FLCS A LED
+     ,{ "FLCCB",   "0923", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}   //923;TEST/FLCS;bool;Flcs_Flcc_B;FLCS B LED
+     ,{ "FLCCC",   "0924", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}   //924;TEST/FLCS;bool;Flcs_Flcc_C;FLCS C LED
+     ,{ "FLCCD",   "0925", 'b',   99,     0,     0,   0,   0,   0,  "", "0"}    //925;TEST/FLCS;bool;Flcs_Flcc_D;FLCS D LED
+
       
-     {  "RTRIM",  "1370", 'f',   60,     0,     0,   0,   0,   0,  "", "0.0"}     //Example Variable 0 - Roll Trim
+     ,{ "RTRIM",  "1370", 'f',   60,     0,     0,   0,   0,   0,  "", "0.0"}     //Example Variable 0 - Roll Trim
      ,{ "PTRIM",  "1360", 'f',   60,     1,     0,   0,   0,   0,  "", "0.0"}    //Example Variable 0 - Right Eyebrow Engine Fire
-     /* 890 , string IFF code
+     
+     ,{ "IFF",    "0890", 's',   30,     0,    0,    6,    1,  99,  "8888"} // 890 , string IFF code
+     
+     
      
      
     }; 
