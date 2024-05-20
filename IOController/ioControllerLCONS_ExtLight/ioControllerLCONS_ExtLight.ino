@@ -5,6 +5,9 @@
 
 //basic settings
   #include <Arduino.h>
+  #include <Joystick.h>
+  #include <Adafruit_MCP23017.h>
+
 
   #define DATENLAENGE 8       // maximum length of a data set
   #define MESSAGEBEGIN 255    // this byte marks the beginning of a new message from the Windows app
@@ -21,7 +24,7 @@
   #define VAR_ENDE '>'        // char to mark the end of the actual data
   #define TYP_ANFANG '{'      // char to mark the begin of the type definition in a message string
   #define TYP_ENDE '}'        // char to mark the begin of the type definition in a message string
-  
+    
 //Function headers
   void ReadData();
   void UpdateInput();
@@ -82,6 +85,41 @@
   long lastPoll=0;            //timestamp of the last data request during pull logic
   byte last_request=99;        //marker for the last variable that was requested via pull logic in the last loop 
 //settings for PULL logic
+
+
+// ***********************************  changes michi  ************************************************
+
+  #define MCPNUM 4
+  #define MCPINPUTS 16
+  #define NOTUSED 255
+
+  #define MCPKY 3
+  #define MCPAVPWR 2
+  #define MCPHUD 1
+  #define MCPAIRCOND 0
+
+  // ------------------  23017 configuration
+  Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
+  Adafruit_MCP23017 mcp1;
+  Adafruit_MCP23017 mcp2;
+  Adafruit_MCP23017 mcp3;
+  Adafruit_MCP23017 mcps[MCPNUM] = { mcp0, mcp1, mcp2, mcp3 };
+  byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
+
+  // status of mcp registers
+  uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
+  uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
+
+
+
+  // create joystick with 90 buttons and 3 axis
+
+  #define JOYBUTTONS 90  // number of total joystick buttons
+  #define JOYHATSWITCHES 0
+  #define JOYHIDID 0x04
+  
+  Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOYHATSWITCHES, true, true, true, false, false, false, false, false, false, false, false);
+
 
 
 //switch and signal settings
@@ -320,6 +358,21 @@ void setup()
     nachricht[9]='\0';
     strcpy(datenfeld[var].request,nachricht);
   }
+  
+  // *******************************  changes michi  ****************************
+    // inititalize 23017s
+  for (int i = 0; i<MCPNUM; i++) {
+    mcps[i].begin(mcpAdresses[i]);
+    for (int x = 0; x<MCPINPUTS; x++) {
+      mcps[i].pinMode(x, INPUT);
+      mcps[i].pullUp(x, HIGH);
+    }
+  }
+  
+  Joystick.begin(false); 
+  
+  
+  
 }
 
 /// Main loop
