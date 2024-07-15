@@ -20,14 +20,15 @@
 #define JOYHATSWITCHES 0
 #define JOYHIDID 0x04
 
-Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOYHATSWITCHES, true, true, true, false, false, false, false, false, false, false, false);
+Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOYHATSWITCHES, true, true, true, true, false, false, false, false, false, false, false);
 
 // button numbers to start from
 #define AIRCONDSTART 0
 #define HUDSTART 19
 #define AVPWRSTART 43
 #define KYSTART 67
-#define ANTIICESTART 82
+#define ANTIICESTART 0
+// FIXXXME #define ANTIICESTART 82
 
 #define VOLUMEPIN A3
 
@@ -40,6 +41,14 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 #define IFFLOWERPIN 7
 #define UHFUPPERPIN 8
 #define UHFLOWERPIN 9
+byte antiIcePins[ANTIICEPINS]={4,5,6,7,8,9};
+
+// OXYGEN REGULATOR pins (directly connectd to ProMicro)
+#define OXYDILUTEPIN  A10
+#define OXYSERVOPIN   A0
+#define OXYTESTMASKPIN 15
+#define OXYEMERPIN     14
+#define OXYONPIN       16
 
 // ------------------  23017 configuration
 Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
@@ -198,12 +207,13 @@ void updateJoystick() {
 
   Joystick.setXAxis(0);
   Joystick.setYAxis(0);
-  Joystick.setZAxis(analogRead(VOLUMEPIN));
+  Joystick.setZAxis(800); // analogRead(VOLUMEPIN));
+  Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
 
   Joystick.sendState();
 }
 
-void setButtonValue(int mcp, int input) {
+void setMCPButtonValue(int mcp, int input) {
 
   boolean inputValue = !(mcps[mcp].digitalRead(input)); // get state of changed input, negate because of pinned to gnd
 
@@ -232,7 +242,7 @@ void checkMCPs() {
           // x = position of changed bit in, check if it's MSB or LSB
           // call routine to check the input and set the specific button
           // send parameters x (mcp) and i (mcp input)
-          setButtonValue(x, i);
+          setMCPButtonValue(x, i);
         }
       }
       registerMcpPrevious[i] = registerMcpCurrent[i];
@@ -242,35 +252,60 @@ void checkMCPs() {
 
 
 void checkAntiIce() {
-  byte pins[ANTIICEPINS][2] = { {ENGINEOFFPIN,0}, {ENGINEONPIN,2}, {IFFUPPERPIN,3}, {IFFLOWERPIN,5}, {UHFUPPERPIN,6}, {UHFLOWERPIN,8} };
-  for (int i=0; i<ANTIICEPINS; i++) {
-    byte baseBtnNum = ANTIICESTART + pins[i][1];
-    byte newBtnNum = baseBtnNum + 1;
-    if (i % 2) newBtnNum = baseBtnNum - 1; // odd index = -1
+  byte switches[3][2] = { {ENGINEOFFPIN, ENGINEONPIN}, {IFFUPPERPIN, IFFLOWERPIN}, {UHFUPPERPIN, UHFLOWERPIN} };
 
-    boolean baseBtnValue = !(digitalRead(pins[i][0]));
-    boolean newBtnValue = !baseBtnValue;
+  byte switchpairnum = sizeof(switches);
 
-    joyButtons[baseBtnNum] = baseBtnValue;
-    joyButtons[newBtnNum] = newBtnValue;
+  for (int i=0; i<switches; i++) {
+    uint8_t pin1 = switches[i][0];
+    uint8_t pin2 = switches[i][1];
+    bool pos1 = !digitalRead(pin1);
+    bool pos2 = !digitalRead(pin2);
+    byte baseBtn = ANTIICESTART + (i*3);
+
+    if ( pos1 || pos2 ) { // one of both positions is 1
+      joyButtons[baseBtn+1] = false;
+    } else {
+      joyButtons[baseBtn+1] = true;
+    }
+    joyButtons[baseBtn] = pos1;
+    joyButtons[baseBtn+2] = pos2;
+    //Serial.print(i);Serial.print(": baseBtn: ");Serial.print(baseBtn);Serial.print(" pos1:");Serial.print(pos1);Serial.print(" pos2:");Serial.println(pos2);
   }
 }
 
+void checkOxyRegulator() {
+
+
+}
 
 
 // sssssssssssssssssssssssss SETUP sssssssssssssssssssssssssss
 
 void setup() {
   // put your setup code here, to run once:
+  //Serial.begin(9600);
 
   // inititalize 23017s
   for (int i = 0; i<MCPNUM; i++) {
     mcps[i].begin(mcpAdresses[i]);
     for (int x = 0; x<MCPINPUTS; x++) {
-      mcps[i].pinMode(x, INPUT);
+      mcps[i].pinMode(x, INPUT_PULLUP);
       mcps[i].pullUp(x, HIGH);
     }
   }
+
+  // initialize antiIcePins
+  for (int i=0; i<ANTIICEPINS; i++) {
+    pinMode(i, INPUT_PULLUP);
+  }
+
+  // initialize OXYGEN pins
+  pinMode(OXYDILUTEPIN, INPUT);
+  pinMode(OXYSERVOPIN, OUTPUT);
+  pinMode(OXYONPIN, INPUT_PULLUP);
+  pinMode(OXYTESTMASKPIN, INPUT_PULLUP);
+  pinMode(OXYEMERPIN, INPUT_PULLUP);
 
   Joystick.begin(false);
 }
@@ -278,7 +313,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   checkAntiIce();
-  checkMCPs();
+  //checkMCPs();
   updateJoystick();
   delay(30); // only input reading does not need high performance, let chip rest
  //
