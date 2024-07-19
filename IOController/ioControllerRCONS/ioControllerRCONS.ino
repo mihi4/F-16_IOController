@@ -23,6 +23,7 @@
 Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOYHATSWITCHES, true, true, true, true, false, false, false, false, false, false, false);
 
 // button numbers to start from
+
 #define AIRCONDSTART 0
 #define HUDSTART 19
 #define AVPWRSTART 43
@@ -33,7 +34,7 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 #define VOLUMEPIN A3
 
 // ANTIICE pins (directly connected to ProMicro)
-#define ANTIICEPINS 6
+#define ANTIICEPINNUM 6
 
 #define ENGINEOFFPIN 4
 #define ENGINEONPIN 5
@@ -41,7 +42,7 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 #define IFFLOWERPIN 7
 #define UHFUPPERPIN 8
 #define UHFLOWERPIN 9
-byte antiIcePins[ANTIICEPINS]={4,5,6,7,8,9};
+byte antiIcePins[ANTIICEPINNUM]={4,5,6,7,8,9};
 
 // OXYGEN REGULATOR pins (directly connectd to ProMicro)
 #define OXYDILUTEPIN  A10
@@ -51,7 +52,7 @@ byte antiIcePins[ANTIICEPINS]={4,5,6,7,8,9};
 #define OXYONPIN       16
 
 // ------------------  23017 configuration
-Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
+/*Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
 Adafruit_MCP23017 mcp1;
 Adafruit_MCP23017 mcp2;
 Adafruit_MCP23017 mcp3;
@@ -61,7 +62,7 @@ byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
 // status of mcp registers
 uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
 uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
-
+*/
 
 
 //jjjjjjjjjjjjjjjjjjjj  joystick/inputs configuration  jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
@@ -69,7 +70,7 @@ uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
 // bit array with all button states
 boolean joyButtons[JOYBUTTONS] = { 0 };
 
-struct InputMapping
+/* struct InputMapping
 {
   byte btnNum;
   boolean isSingle;  // does the input create only one button (rotary switch) or multiple (2/3way switch)
@@ -187,7 +188,7 @@ struct mcpInputs {
 };
 
 //mcpInputs MCPInputs[MCPNUM]; //= {aircondButtons, avpwrButtons, hudButtons, kyButtons};
-//MCPInputs[0].inputMappings = aircondButtons;*/
+//MCPInputs[0].inputMappings = aircondButtons;
 mcpInputs ac = {aircondButtons};
 mcpInputs av = {avpwrButtons};
 mcpInputs hud = {hudButtons};
@@ -195,24 +196,11 @@ mcpInputs ky = {kyButtons};
 
 mcpInputs MCPInputs[MCPNUM] = {ac, av, hud, ky};
 
+*/
 
 // ffffffffffffffffffffffffffffffff functions
 
-void updateJoystick() {
-
-  // set Joystickbuttons according to array
-  for (int i=0; i<JOYBUTTONS; i++) {
-    Joystick.setButton(i, joyButtons[i]);
-  }
-
-  Joystick.setXAxis(0);
-  Joystick.setYAxis(0);
-  Joystick.setZAxis(800); // analogRead(VOLUMEPIN));
-  Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
-
-  Joystick.sendState();
-}
-
+/*
 void setMCPButtonValue(int mcp, int input) {
 
   boolean inputValue = !(mcps[mcp].digitalRead(input)); // get state of changed input, negate because of pinned to gnd
@@ -249,14 +237,31 @@ void checkMCPs() {
     }
   }
 }
+*/
+
+void updateJoystick() {
+
+  // set Joystickbuttons according to array
+  for (int i=0; i<JOYBUTTONS; i++) {
+    Joystick.setButton(i, joyButtons[i]);
+  }
+
+  Joystick.setXAxis(0);
+  Joystick.setYAxis(0);
+  Joystick.setZAxis(800); // analogRead(VOLUMEPIN));
+  Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
+
+  Joystick.sendState();
+
+}
 
 
 void checkAntiIce() {
   byte switches[3][2] = { {ENGINEOFFPIN, ENGINEONPIN}, {IFFUPPERPIN, IFFLOWERPIN}, {UHFUPPERPIN, UHFLOWERPIN} };
 
-  byte switchpairnum = sizeof(switches);
+  byte switchpairnum = 3;
 
-  for (int i=0; i<switches; i++) {
+  for (int i=0; i<switchpairnum; i++) {
     uint8_t pin1 = switches[i][0];
     uint8_t pin2 = switches[i][1];
     bool pos1 = !digitalRead(pin1);
@@ -274,30 +279,38 @@ void checkAntiIce() {
   }
 }
 
+
 void checkOxyRegulator() {
 
 
 }
+
+int lastUpdate;
+byte updateIntervall = 10;
+
 
 
 // sssssssssssssssssssssssss SETUP sssssssssssssssssssssssssss
 
 void setup() {
   // put your setup code here, to run once:
-  //Serial.begin(9600);
-
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB
+  }
+  Serial.println("F-16 Right Console IOController starting!");
   // inititalize 23017s
-  for (int i = 0; i<MCPNUM; i++) {
+ /* for (int i = 0; i<MCPNUM; i++) {
     mcps[i].begin(mcpAdresses[i]);
     for (int x = 0; x<MCPINPUTS; x++) {
       mcps[i].pinMode(x, INPUT_PULLUP);
       mcps[i].pullUp(x, HIGH);
     }
   }
-
+*/
   // initialize antiIcePins
-  for (int i=0; i<ANTIICEPINS; i++) {
-    pinMode(i, INPUT_PULLUP);
+  for (int i=0; i<ANTIICEPINNUM; i++) {
+    pinMode(antiIcePins[i], INPUT_PULLUP);
   }
 
   // initialize OXYGEN pins
@@ -308,6 +321,8 @@ void setup() {
   pinMode(OXYEMERPIN, INPUT_PULLUP);
 
   Joystick.begin(false);
+
+
 }
 
 void loop() {
@@ -315,6 +330,6 @@ void loop() {
   checkAntiIce();
   //checkMCPs();
   updateJoystick();
-  delay(30); // only input reading does not need high performance, let chip rest
+  delay(50); // only input reading does not need high performance, let chip rest
  //
 }
