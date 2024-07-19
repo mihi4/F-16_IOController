@@ -28,8 +28,7 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 #define HUDSTART 19
 #define AVPWRSTART 43
 #define KYSTART 67
-#define ANTIICESTART 0
-// FIXXXME #define ANTIICESTART 82
+#define ANTIICESTART 82
 
 #define VOLUMEPIN A3
 
@@ -52,7 +51,13 @@ byte antiIcePins[ANTIICEPINNUM]={4,5,6,7,8,9};
 #define OXYONPIN       16
 
 // ------------------  23017 configuration
-/*Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
+#define MCP1ADDR 1 //A0=5V,A1,A2 GND, for mcp1; mcp0 does not need an address, default is 0
+/*
+  addr 0 = A2 low , A1 low , A0 low  000
+  addr 1 = A2 low , A1 low , A0 high 001
+*/
+
+Adafruit_MCP23017 mcp0; //first chip, used for rotaries and left funkyswitch
 Adafruit_MCP23017 mcp1;
 Adafruit_MCP23017 mcp2;
 Adafruit_MCP23017 mcp3;
@@ -62,7 +67,7 @@ byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
 // status of mcp registers
 uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
 uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
-*/
+
 
 
 //jjjjjjjjjjjjjjjjjjjj  joystick/inputs configuration  jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
@@ -70,7 +75,7 @@ uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
 // bit array with all button states
 boolean joyButtons[JOYBUTTONS] = { 0 };
 
-/* struct InputMapping
+ struct InputMapping
 {
   byte btnNum;
   boolean isSingle;  // does the input create only one button (rotary switch) or multiple (2/3way switch)
@@ -78,7 +83,7 @@ boolean joyButtons[JOYBUTTONS] = { 0 };
 };
 
 // Define all inputs per mcp and their according joystick button values (on/off)
-struct InputMapping aircondButtons[MCPINPUTS] = {
+InputMapping aircondButtons[MCPINPUTS] = {
   // AIRCOND Rotary
   {AIRCONDSTART,   1, 0}, // OFF (0)
   {AIRCONDSTART+1, 1, 0 }, // NORM (1)
@@ -108,7 +113,7 @@ struct InputMapping aircondButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}
 };
 
-struct InputMapping hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
+InputMapping hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
   {HUDSTART,   0, 1}, // Pin 0, VV/VAH -> VAH (1)
   {HUDSTART+2, 0, 0}, // Pin 1, OFF -> VAH (1)
 
@@ -135,7 +140,7 @@ struct InputMapping hudButtons[MCPINPUTS] = {  // OFFSet is HUDSTART
   {HUDSTART+23, 0, 0} // Pin 11, OFF -> ON (22)
 };
 
-struct InputMapping avpwrButtons[MCPINPUTS] = {
+InputMapping avpwrButtons[MCPINPUTS] = {
   // INS Rotary
   {AVPWRSTART,   1, 0}, // OFF
   {AVPWRSTART+1, 1, 0 }, // STOR HDG
@@ -157,7 +162,7 @@ struct InputMapping avpwrButtons[MCPINPUTS] = {
   {AVPWRSTART+22, 0, 1} // GPS -> OFF (23)
 };
 
-struct InputMapping kyButtons[MCPINPUTS] = {
+InputMapping kyButtons[MCPINPUTS] = {
   // MODE rotary
   {KYSTART,   1, 0}, // P
   {KYSTART+1, 1, 0}, // C
@@ -183,61 +188,72 @@ struct InputMapping kyButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}  // Pin 16 not used
 };
 
-struct mcpInputs {
-  InputMapping inputMappings[MCPNUM];
+const InputMapping allMappings[][MCPNUM] = { {aircondButtons}, {avpwrButtons}, {hudButtons}, {kyButtons} };
+
+/* struct mcpInputs {
+  InputMapping inputMappings[MCPINPUTS];
 };
 
 //mcpInputs MCPInputs[MCPNUM]; //= {aircondButtons, avpwrButtons, hudButtons, kyButtons};
+mcpInputs ac = { {aircondButtons} };
 //MCPInputs[0].inputMappings = aircondButtons;
-mcpInputs ac = {aircondButtons};
-mcpInputs av = {avpwrButtons};
-mcpInputs hud = {hudButtons};
-mcpInputs ky = {kyButtons};
+mcpInputs av = {  {avpwrButtons} };
+mcpInputs hud ={ {hudButtons} };
+mcpInputs ky = { {kyButtons} };
 
 mcpInputs MCPInputs[MCPNUM] = {ac, av, hud, ky};
-
 */
-
 // ffffffffffffffffffffffffffffffff functions
 
-/*
 void setMCPButtonValue(int mcp, int input) {
-
+/*
   boolean inputValue = !(mcps[mcp].digitalRead(input)); // get state of changed input, negate because of pinned to gnd
-
   InputMapping mapping = MCPInputs[mcp].inputMappings[input];
   byte baseBtnNum = mapping.btnNum;
+  if (baseBtnNum != 255) {
+    Serial.print("input ");Serial.print(input);Serial.print(" value: "); Serial.print(inputValue);Serial.print(" BaseButton: ");Serial.println(baseBtnNum);
 
-  if (!mapping.isSingle) { // 2 or 3way switch connected to input
-    boolean valueToSet = !inputValue; // second button is always negation of input
-    byte newBtnNum = baseBtnNum-1;
-    if (mapping.nextPositive) newBtnNum = baseBtnNum+1;
-
-    joyButtons[newBtnNum] = valueToSet;
+    boolean singleTest = mapping.isSingle;
+    Serial.println("============");
+    Serial.println("MAPPING DATA");
+    Serial.print("btnNum: ");Serial.println(mapping.btnNum);
+    Serial.print("isSingle: ");Serial.println(singleTest);
+    Serial.print("nextPositive");Serial.println(mapping.nextPositive);
+    Serial.println("============");
+    if (!mapping.isSingle) { // 2 or 3way switch connected to input
+      boolean valueToSet = !inputValue; // second button is always negation of input
+      byte newBtnNum = baseBtnNum-1;
+      if (mapping.nextPositive) newBtnNum = baseBtnNum+1;
+      Serial.print("Button ");Serial.print(newBtnNum);Serial.print("-val:");Serial.println(valueToSet);
+      joyButtons[newBtnNum] = valueToSet;
+    }
+    joyButtons[baseBtnNum] = inputValue;
   }
-  joyButtons[baseBtnNum] = inputValue;
+  */
 }
 
 
 void checkMCPs() {
   // iterate through io registers from all 23017
-  for (int i=0; i<MCPNUM; i++) {
+  for (int i=0; i<1; i++) { // MCPNUM; i++) {
     registerMcpCurrent[i] = mcps[i].readGPIOAB();
+    //Serial.print(i);Serial.print(": regCurrent is "); Serial.println(registerMcpCurrent[i]);
     if (registerMcpCurrent[i] != registerMcpPrevious[i]) {
+      Serial.println("------- register changed -------");
       // check, which bits have changed and set button values
       for (int x = 0; x < MCPINPUTS; x++) {
         if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
           // x = position of changed bit in, check if it's MSB or LSB
           // call routine to check the input and set the specific button
-          // send parameters x (mcp) and i (mcp input)
-          setMCPButtonValue(x, i);
+          // send parameters i (mcp) and x (mcp input)
+          Serial.print("Setting Button ");Serial.print(x);Serial.print(" of MCP "); Serial.println(i);
+          setMCPButtonValue(i, x);
         }
       }
       registerMcpPrevious[i] = registerMcpCurrent[i];
     }
   }
 }
-*/
 
 void updateJoystick() {
 
@@ -300,14 +316,14 @@ void setup() {
   }
   Serial.println("F-16 Right Console IOController starting!");
   // inititalize 23017s
- /* for (int i = 0; i<MCPNUM; i++) {
+  for (int i = 0; i<MCPNUM; i++) {
     mcps[i].begin(mcpAdresses[i]);
     for (int x = 0; x<MCPINPUTS; x++) {
-      mcps[i].pinMode(x, INPUT_PULLUP);
+      mcps[i].pinMode(x, INPUT);
       mcps[i].pullUp(x, HIGH);
     }
   }
-*/
+
   // initialize antiIcePins
   for (int i=0; i<ANTIICEPINNUM; i++) {
     pinMode(antiIcePins[i], INPUT_PULLUP);
@@ -321,15 +337,29 @@ void setup() {
   pinMode(OXYEMERPIN, INPUT_PULLUP);
 
   Joystick.begin(false);
+  for (int mcp=0; mcp<MCPNUM; mcp++) {
+    //Serial.print("mcp: ");Serial.println(mcp);
+    for (int input=0; input<MCPINPUTS; input++) {
+      InputMapping mapping = allMappings[mcp][input];
+      Serial.println("============");
+      Serial.print("MAPPING DATA - ");Serial.println(input);
+      Serial.print("btnNum: ");Serial.println(mapping.btnNum);
+      Serial.print("isSingle: ");Serial.println(mapping.isSingle);
+      Serial.print("nextPositive: ");Serial.println(mapping.nextPositive);
+      Serial.println("============");
+    }
 
+  }
+
+  Serial.println("Setup finished");
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  checkAntiIce();
+  //checkAntiIce();
   //checkMCPs();
   updateJoystick();
-  delay(50); // only input reading does not need high performance, let chip rest
+  delay(300); // only input reading does not need high performance, let chip rest
  //
 }
