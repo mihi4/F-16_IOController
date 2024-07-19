@@ -450,6 +450,6 @@ void loop() {
   //checkAntiIce();
   checkMCPs();
   updateJoystick();
-  delay(300); // only input reading does not need high performance, let chip rest
+  delay(50); // only input reading does not need high performance, let chip rest
  //
 }
