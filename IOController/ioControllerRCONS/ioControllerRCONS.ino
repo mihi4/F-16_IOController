@@ -82,7 +82,7 @@ boolean joyButtons[JOYBUTTONS] = { 0 };
   boolean nextPositive; // if multiple, is the "off" button number +1 or -1 than btnNum
 } InputMapping;
 /*
-// Define all inputs per mcp and their according joystick button values (on/off)
+
 InputMapping aircondButtons[MCPINPUTS] = {
   // AIRCOND Rotary
   {AIRCONDSTART,   1, 0}, // OFF (0)
@@ -188,6 +188,8 @@ InputMapping kyButtons[MCPINPUTS] = {
   {NOTUSED, 0, 0}  // Pin 16 not used
 };
 */
+
+// Define all inputs per mcp and their according joystick button values (on/off)
 const InputMapping allMappings[MCPNUM][MCPINPUTS] = {
   {    ////////////////////  AIRCONDITION  //////////////////////////
 
@@ -292,19 +294,6 @@ const InputMapping allMappings[MCPNUM][MCPINPUTS] = {
   }
  };
 
-/* struct mcpInputs {
-  InputMapping inputMappings[MCPINPUTS];
-};
-
-//mcpInputs MCPInputs[MCPNUM]; //= {aircondButtons, avpwrButtons, hudButtons, kyButtons};
-mcpInputs ac = { {aircondButtons} };
-//MCPInputs[0].inputMappings = aircondButtons;
-mcpInputs av = {  {avpwrButtons} };
-mcpInputs hud ={ {hudButtons} };
-mcpInputs ky = { {kyButtons} };
-
-mcpInputs MCPInputs[MCPNUM] = {ac, av, hud, ky};
-*/
 // ffffffffffffffffffffffffffffffff functions
 
 void setMCPButtonValue(int mcp, int input) {
@@ -313,10 +302,10 @@ void setMCPButtonValue(int mcp, int input) {
   InputMapping mapping = allMappings[mcp][input];
   byte baseBtnNum = mapping.btnNum;
   if (baseBtnNum != 255) {
-    Serial.print("input ");Serial.print(input);Serial.print(" value: "); Serial.print(inputValue);Serial.print(" BaseButton: ");Serial.println(baseBtnNum);
 
     boolean singleTest = mapping.isSingle;
     Serial.println("============");
+    Serial.print("input ");Serial.print(input);Serial.print(" value: "); Serial.print(inputValue);Serial.print(" BaseButton: ");Serial.println(baseBtnNum);
     Serial.println("MAPPING DATA");
     Serial.print("btnNum: ");Serial.println(mapping.btnNum);
     Serial.print("isSingle: ");Serial.println(singleTest);
