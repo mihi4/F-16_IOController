@@ -45,8 +45,7 @@ byte antiIcePins[ANTIICEPINNUM]={4,5,6,7,8,9};
 
 // OXYGEN REGULATOR pins (directly connectd to ProMicro)
 #define OXYDILUTEPIN  A10
-#define OXYSERVOPIN   15
-//A0
+#define OXYSERVOPIN   A0
 #define OXYTESTMASKPIN 15
 #define OXYEMERPIN     14
 #define OXYONPIN       16
@@ -456,9 +455,8 @@ void setup() {
 
   Serial.print("Setting up Servo");
   oxyIndicator.attach(OXYSERVOPIN);
-  delay(50);
   oxyIndicator.write(OXYZERO);
-  delay(50);
+  delay(400);
   oxyIndicator.detach();
   Serial.println("- Servo done");
 
