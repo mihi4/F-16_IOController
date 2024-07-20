@@ -28,7 +28,10 @@ Joystick_ Joystick = Joystick_(JOYHIDID, JOYSTICK_TYPE_JOYSTICK, JOYBUTTONS, JOY
 #define HUDSTART 19
 #define AVPWRSTART 43
 #define KYSTART 67
-#define ANTIICESTART 82
+#define ANTIICESTART 10
+// 82
+#define OXYBTNSTART 20
+//88
 
 #define VOLUMEPIN A3
 
@@ -314,18 +317,18 @@ void setMCPButtonValue(int mcp, int input) {
   if (baseBtnNum != 255) {
 
     boolean singleTest = mapping.isSingle;
-    Serial.println("============");
-    Serial.print("input ");Serial.print(input);Serial.print(" value: "); Serial.print(inputValue);Serial.print(" BaseButton: ");Serial.println(baseBtnNum);
-    Serial.println("MAPPING DATA");
-    Serial.print("btnNum: ");Serial.println(mapping.btnNum);
-    Serial.print("isSingle: ");Serial.println(singleTest);
-    Serial.print("nextPositive");Serial.println(mapping.nextPositive);
-    Serial.println("============");
+    // Serial.println("============");
+    // Serial.print("input ");Serial.print(input);Serial.print(" value: "); // Serial.print(inputValue);Serial.print(" BaseButton: ");Serial.println(baseBtnNum);
+    // Serial.println("MAPPING DATA");
+    // Serial.print("btnNum: ");Serial.println(mapping.btnNum);
+    // Serial.print("isSingle: ");Serial.println(singleTest);
+    // Serial.print("nextPositive");Serial.println(mapping.nextPositive);
+    // Serial.println("============");
     if (!mapping.isSingle) { // 2 or 3way switch connected to input
       boolean valueToSet = !inputValue; // second button is always negation of input
       byte newBtnNum = baseBtnNum-1;
       if (mapping.nextPositive) newBtnNum = baseBtnNum+1;
-      Serial.print("Button ");Serial.print(newBtnNum);Serial.print("-val:");Serial.println(valueToSet);
+      // Serial.print("Button ");Serial.print(newBtnNum);Serial.print("-val:");Serial.println(valueToSet);
       joyButtons[newBtnNum] = valueToSet;
     }
     joyButtons[baseBtnNum] = inputValue;
@@ -337,16 +340,16 @@ void checkMCPs() {
   // iterate through io registers from all 23017
   for (int i=0; i<1; i++) { // MCPNUM; i++) {
     registerMcpCurrent[i] = mcps[i].readGPIOAB();
-    //Serial.print(i);Serial.print(": regCurrent is "); Serial.println(registerMcpCurrent[i]);
+    //Serial.print(i);Serial.print(": regCurrent is "); // Serial.println(registerMcpCurrent[i]);
     if (registerMcpCurrent[i] != registerMcpPrevious[i]) {
-      Serial.println("------- register changed -------");
+      // Serial.println("------- register changed -------");
       // check, which bits have changed and set button values
       for (int x = 0; x < MCPINPUTS; x++) {
         if ((registerMcpCurrent[i] & (1 << x)) != (registerMcpPrevious[i] & (1 << x))) {
           // x = position of changed bit in, check if it's MSB or LSB
           // call routine to check the input and set the specific button
           // send parameters i (mcp) and x (mcp input)
-          Serial.print("Setting Button ");Serial.print(x);Serial.print(" of MCP "); Serial.println(i);
+          // Serial.print("Setting Button ");Serial.print(x);Serial.print(" of MCP "); // Serial.println(i);
           setMCPButtonValue(i, x);
         }
       }
@@ -380,23 +383,21 @@ void checkAntiIce() {
   for (int i=0; i<switchpairnum; i++) {
     uint8_t pin1 = switches[i][0];
     uint8_t pin2 = switches[i][1];
-    bool pos1 = !digitalRead(pin1);
-    bool pos2 = !digitalRead(pin2);
+    bool pos1 = digitalRead(pin1);
+    bool pos2 = digitalRead(pin2);
     byte baseBtn = ANTIICESTART + (i*3);
 
-    if ( pos1 || pos2 ) { // one of both positions is 1
-      joyButtons[baseBtn+1] = false;
-    } else {
-      joyButtons[baseBtn+1] = true;
-    }
-    joyButtons[baseBtn] = pos1;
-    joyButtons[baseBtn+2] = pos2;
+    joyButtons[baseBtn] = !pos1;
+    joyButtons[baseBtn+2] = !pos2;
+    joyButtons[baseBtn+1] = pos1 && pos2;
+
     //Serial.print(i);Serial.print(": baseBtn: ");Serial.print(baseBtn);Serial.print(" pos1:");Serial.print(pos1);Serial.print(" pos2:");Serial.println(pos2);
   }
 }
 
 
 void updateOxyRegulator() {
+
   unsigned long timeNow = millis();
   if (!digitalRead(OXYONPIN)) {  // power on
     oxyZeroized = false;
@@ -409,13 +410,28 @@ void updateOxyRegulator() {
       if ((timeNow - lastZeroTime) > oxyCheckInterval)  oxyIndicator.detach();
     } else {
         if (oxyIndicator.attached()) {
-          Serial.println("writing ZERO");
+          // Serial.println("writing ZERO");
           oxyIndicator.write(OXYZERO);
           oxyZeroized = true;
           lastZeroTime = timeNow;
         }
     }
   }
+
+  // button functions
+  byte baseBtnNum = OXYBTNSTART;
+
+  // ON/OFF switch
+  joyButtons[baseBtnNum] = !digitalRead(OXYONPIN);
+  joyButtons[baseBtnNum+1] = digitalRead(OXYONPIN);
+
+  // MASK switch
+  bool posEMER = digitalRead(OXYEMERPIN);
+  bool posTESTMASK = digitalRead(OXYTESTMASKPIN);
+  joyButtons[baseBtnNum+2] = !posEMER;
+  joyButtons[baseBtnNum+4] = !posTESTMASK;
+  joyButtons[baseBtnNum+3] = posEMER && posTESTMASK;
+
 }
 
 int lastUpdate;
@@ -427,11 +443,11 @@ byte updateIntervall = 10;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  // Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB
   }
-  Serial.println("F-16 Right Console IOController starting!");
+  // Serial.println("F-16 Right Console IOController starting!");
   // inititalize 23017s
   for (int i = 0; i<MCPNUM; i++) {
     mcps[i].begin(mcpAdresses[i]);
@@ -453,38 +469,38 @@ void setup() {
   pinMode(OXYTESTMASKPIN, INPUT_PULLUP);
   pinMode(OXYEMERPIN, INPUT_PULLUP);
 
-  Serial.print("Setting up Servo");
+  // Serial.print("Setting up Servo");
   oxyIndicator.attach(OXYSERVOPIN);
   oxyIndicator.write(OXYZERO);
   delay(400);
   oxyIndicator.detach();
-  Serial.println("- Servo done");
+  // Serial.println("- Servo done");
 
   Joystick.begin(false);
   /*for (int mcp=0; mcp<MCPNUM; mcp++) {
-    Serial.print("---------------------  mcp: ");Serial.println(mcp);
+    // Serial.print("---------------------  mcp: ");Serial.println(mcp);
     for (int input=0; input<MCPINPUTS; input++) {
       InputMapping mapping = allMappings[mcp][input];
-      Serial.println("============");
-      Serial.print("MAPPING DATA - ");Serial.println(input);
-      Serial.print("btnNum: ");Serial.println(mapping.btnNum);
-      Serial.print("isSingle: ");Serial.println(mapping.isSingle);
-      Serial.print("nextPositive: ");Serial.println(mapping.nextPositive);
-      Serial.println("============");
+      // Serial.println("============");
+      // Serial.print("MAPPING DATA - ");Serial.println(input);
+      // Serial.print("btnNum: ");Serial.println(mapping.btnNum);
+      // Serial.print("isSingle: ");Serial.println(mapping.isSingle);
+      // Serial.print("nextPositive: ");Serial.println(mapping.nextPositive);
+      // Serial.println("============");
     }
 
   }*/
 
-  Serial.println("Setup finished");
+  // Serial.println("Setup finished");
 
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //checkAntiIce();
+  checkAntiIce();
   //checkMCPs();
-  updateJoystick();
   updateOxyRegulator();
-  delay(50); // only input reading does not need high performance, let chip rest
+  updateJoystick();
+  delay(30); // only input reading does not need high performance, let chip rest
  //
 }
