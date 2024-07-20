@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Joystick.h>
 #include <Adafruit_MCP23017.h>
-
+#include <Servo.h>
 // define mcps
 
 #define MCPNUM 4
@@ -45,10 +45,16 @@ byte antiIcePins[ANTIICEPINNUM]={4,5,6,7,8,9};
 
 // OXYGEN REGULATOR pins (directly connectd to ProMicro)
 #define OXYDILUTEPIN  A10
-#define OXYSERVOPIN   A0
+#define OXYSERVOPIN   15
+//A0
 #define OXYTESTMASKPIN 15
 #define OXYEMERPIN     14
 #define OXYONPIN       16
+
+// servo positions
+#define OXYZERO 33
+#define OXYSTART 61
+#define OXYEND 139
 
 // ------------------  23017 configuration
 #define MCP1ADDR 1 //A0=5V,A1,A2 GND, for mcp1; mcp0 does not need an address, default is 0
@@ -67,8 +73,6 @@ byte mcpAdresses[MCPNUM] = {0, 1, 2, 3};
 // status of mcp registers
 uint16_t registerMcpCurrent[MCPNUM] = { 0, 0, 0, 0 };
 uint16_t registerMcpPrevious[MCPNUM] = { 0, 0, 0 ,0 };
-
-
 
 //jjjjjjjjjjjjjjjjjjjj  joystick/inputs configuration  jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj
 
@@ -294,6 +298,13 @@ const InputMapping allMappings[MCPNUM][MCPINPUTS] = {
   }
  };
 
+///////////////////  OXYSERVOPIN
+
+Servo oxyIndicator;
+unsigned long lastZeroTime = 0;
+bool oxyZeroized = false;
+byte oxyCheckInterval = 500;
+
 // ffffffffffffffffffffffffffffffff functions
 
 void setMCPButtonValue(int mcp, int input) {
@@ -386,9 +397,26 @@ void checkAntiIce() {
 }
 
 
-void checkOxyRegulator() {
-
-
+void updateOxyRegulator() {
+  unsigned long timeNow = millis();
+  if (!digitalRead(OXYONPIN)) {  // power on
+    oxyZeroized = false;
+    if (!oxyIndicator.attached()) oxyIndicator.attach(OXYSERVOPIN);
+    int oxyIndicatorPos = map(analogRead(OXYDILUTEPIN), 0, 1024, OXYSTART, OXYEND);
+    oxyIndicator.write(oxyIndicatorPos);
+  } else {  // no power on the OXY Panel
+    timeNow = millis();
+    if (oxyZeroized) {
+      if ((timeNow - lastZeroTime) > oxyCheckInterval)  oxyIndicator.detach();
+    } else {
+        if (oxyIndicator.attached()) {
+          Serial.println("writing ZERO");
+          oxyIndicator.write(OXYZERO);
+          oxyZeroized = true;
+          lastZeroTime = timeNow;
+        }
+    }
+  }
 }
 
 int lastUpdate;
@@ -426,6 +454,14 @@ void setup() {
   pinMode(OXYTESTMASKPIN, INPUT_PULLUP);
   pinMode(OXYEMERPIN, INPUT_PULLUP);
 
+  Serial.print("Setting up Servo");
+  oxyIndicator.attach(OXYSERVOPIN);
+  delay(50);
+  oxyIndicator.write(OXYZERO);
+  delay(50);
+  oxyIndicator.detach();
+  Serial.println("- Servo done");
+
   Joystick.begin(false);
   /*for (int mcp=0; mcp<MCPNUM; mcp++) {
     Serial.print("---------------------  mcp: ");Serial.println(mcp);
@@ -448,8 +484,9 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   //checkAntiIce();
-  checkMCPs();
+  //checkMCPs();
   updateJoystick();
+  updateOxyRegulator();
   delay(50); // only input reading does not need high performance, let chip rest
  //
 }
