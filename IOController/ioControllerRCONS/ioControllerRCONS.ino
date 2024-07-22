@@ -368,8 +368,8 @@ void updateJoystick() {
   Joystick.setXAxis(0);
   Joystick.setYAxis(0);
   Joystick.setZAxis(800); // analogRead(VOLUMEPIN));
-  Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
-
+  //Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
+  Joystick.setRxAxis(map(analogRead(OXYDILUTEPIN), 200, 850, 1023, 0));
   Joystick.sendState();
 
 }
@@ -399,10 +399,10 @@ void checkAntiIce() {
 void updateOxyRegulator() {
 
   unsigned long timeNow = millis();
-  if (!digitalRead(OXYONPIN)) {  // power on
+  if (digitalRead(OXYONPIN)) {  // power on
     oxyZeroized = false;
     if (!oxyIndicator.attached()) oxyIndicator.attach(OXYSERVOPIN);
-    int oxyIndicatorPos = map(analogRead(OXYDILUTEPIN), 0, 1024, OXYSTART, OXYEND);
+    int oxyIndicatorPos = map(analogRead(OXYDILUTEPIN), 200, 850, OXYEND, OXYSTART);
     oxyIndicator.write(oxyIndicatorPos);
   } else {  // no power on the OXY Panel
     timeNow = millis();
@@ -444,9 +444,9 @@ byte updateIntervall = 10;
 void setup() {
   // put your setup code here, to run once:
   // Serial.begin(9600);
-  while (!Serial) {
+/*  while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB
-  }
+  }*/
   // Serial.println("F-16 Right Console IOController starting!");
   // inititalize 23017s
   for (int i = 0; i<MCPNUM; i++) {
