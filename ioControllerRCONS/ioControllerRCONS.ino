@@ -367,7 +367,7 @@ void updateJoystick() {
 
   Joystick.setXAxis(0);
   Joystick.setYAxis(0);
-  Joystick.setZAxis(800); // analogRead(VOLUMEPIN));
+  Joystick.setZAxis(800); // analogRead(VOLUMEPIN));  FIXXXME, still to do.
   //Joystick.setRxAxis(analogRead(OXYDILUTEPIN));
   Joystick.setRxAxis(map(analogRead(OXYDILUTEPIN), 200, 850, 1023, 0));
   Joystick.sendState();
@@ -397,7 +397,7 @@ void checkAntiIce() {
 
 
 void updateOxyRegulator() {
-
+  /* move the needle according to the dilute lever */
   unsigned long timeNow = millis();
   if (digitalRead(OXYONPIN)) {  // power on
     oxyZeroized = false;
@@ -433,11 +433,6 @@ void updateOxyRegulator() {
   joyButtons[baseBtnNum+3] = posEMER && posTESTMASK;
 
 }
-
-int lastUpdate;
-byte updateIntervall = 10;
-
-
 
 // sssssssssssssssssssssssss SETUP sssssssssssssssssssssssssss
 
@@ -498,7 +493,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   checkAntiIce();
-  //checkMCPs();
+  //checkMCPs();   FIXXXME enable when 23017 connected
   updateOxyRegulator();
   updateJoystick();
   delay(30); // only input reading does not need high performance, let chip rest
