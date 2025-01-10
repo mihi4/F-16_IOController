@@ -2,6 +2,8 @@ Multiple Arduino ProMicros (APM) will be used to either control inputs or output
 Data extraction from either BMS or DCS will be done over BMSAIT.  
 Inputs are either direct pins on the APM (OXY panel) or MCP23017 IOExtenders (IOEs)
 
+AT THE MOMENT, ONLY THE RIGHT CONSOLE PART IS FINISHED, ALL OTHERS ARE PLACEHOLDERS!
+
 # Right Console
 
 ## KY58 
