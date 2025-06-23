@@ -1,6 +1,6 @@
-Multiple Arduino ProMicros (APM) will be used to either control inputs or outputs (LEDs, servos, displays).  
+Multiple Arduinos (Mega, Nano, ProMicro) will be used to either control inputs or outputs (LEDs, servos, displays).  
 Data extraction from either BMS or DCS will be done over BMSAIT.  
-Inputs are either direct pins on the APM (OXY panel) or MCP23017 IOExtenders (IOEs)
+Inputs are either direct pins on the APM (ArduinoProMicro) (OXY panel) or MCP23017 IOExtenders (IOEs)
 
 AT THE MOMENT, ONLY THE RIGHT CONSOLE PART IS FINISHED, ALL OTHERS ARE PLACEHOLDERS!
 
